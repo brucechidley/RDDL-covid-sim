@@ -28,6 +28,8 @@ goal = (# of masked agents * mask_penalty)
           + (# of regular beds occupied over capacity * regular_bed_penalty)
           + (# of ICU beds occupied over capacity * ICU_bed_penalty)
 
+In the future, the number of infected agents will have no bearing on the goal. The probabilities that an agent is hospitalized are so low that it is unlikely for any agents to be hospitalized given the number of agents used per simulation. So, I chose to have the number of infected agents to count towards the goal so that actions would be taken by the planner.
+
 All of these penalties are negative, and so the goal can be a maximum of 0. Thus, by the planner maximizing this equation, the optimal series of actions should be found.
 
 I have included four instance files that are similar, but slightly different with regards to the transmission chances and action penalties. When running the simulation, the important parts of the visualization to look at are "susceptible_count", "exposed_count", "infectious_count", "recovered_count", "vaccine_implemented", and "mask_implemented". There are too many agents for many of the other charts to be readable.

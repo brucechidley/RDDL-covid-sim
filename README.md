@@ -1,5 +1,7 @@
 # Modeling Disease Spread in a Community
 
+### RDDL Model
+
 This RDDL domain models the spread of disease in a community. Agents, in this domain, move through the following SEIR states:
 
  - Susceptible: An agent does not have the disease, and has no natural immunity to it

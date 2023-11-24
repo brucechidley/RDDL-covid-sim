@@ -63,8 +63,8 @@ def parse_arguments():
     parser.add_argument("--vaccine_penalty_all", type=float, default=-10, help="Enter the vaccine penalty factor for all agents")
     parser.add_argument("--mask_penalty_students", type=float, default=-5, help="Enter the mask penalty factor for students")
     parser.add_argument("--vaccine_penalty_students", type=float, default=-5, help="Enter the vaccine penalty factor for students")
-    parser.add_argument("--non_icu_penalty", type=float, default=-6000, help="Enter the non-ICU penalty factor")
-    parser.add_argument("--icu_penalty", type=float, default=-6000, help="Enter the ICU penalty factor")
+    parser.add_argument("--non_icu_penalty", type=float, default=-8000, help="Enter the non-ICU penalty factor")
+    parser.add_argument("--icu_penalty", type=float, default=-8000, help="Enter the ICU penalty factor")
 
     #The factors that will be multiplied with transmission chance
     parser.add_argument("--mask_factor", type=float, default=0.8, help="Enter the factor that wearing a mask multiplies transmission rate by")

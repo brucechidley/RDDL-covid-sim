@@ -58,23 +58,18 @@ domain covid-sim {
 		exposed(agent) : { state-fluent, bool, default = false }; // agent currently exposed to COVID-19
 		exposed_total_time(agent) : { state-fluent, real, default = 10 }; // the total time an agent will remain in the exposed class
 		exposed_period(agent) : { state-fluent, real, default = 0.0 }; // time an agent has been in the exposed class
-		exposed_count: { state-fluent, int, default = 0}; // Number of exposed agents
 
 		infectious(agent) : { state-fluent, bool, default = false }; // agent currently infectious with COVID-19
 		infectious_total_time(agent) : { state-fluent, real, default = 10 }; // the total time an agent will remain in the infectious class
 		infectious_period(agent) : { state-fluent, real, default = 0.0 }; // time an agent has been in the infectious class
-		infectious_count: { state-fluent, int, default = 0}; // Number of infectious agents
 
 		isolating(agent) : { state-fluent, bool, default = false }; //Checks whether or not an agent is isolating
 		hospitalized_non_ICU(agent) : { state-fluent, bool, default = false }; //Checks whether or not an agent is hospitalized (not ICU)
 		hospitalized_ICU(agent) : { state-fluent, bool, default = false }; //Checks whether or not an agent is hospitalized (ICU)
-		hospitalized_non_ICU_count: { state-fluent, int, default = 0}; // Number of agents hospitalized in a regular bed
-		hospitalized_ICU_count: { state-fluent, int, default = 0}; // Number of agents hospitalized in an ICU bed
 
 		recovered(agent) : { state-fluent, bool, default = false }; // agent currently recovered from COVID-19
 		recovered_total_time(agent) : { state-fluent, real, default = 10 }; // the total time an agent will remain in the recovered class
 		recovered_period(agent) : { state-fluent, real, default = 0.0 }; // time an agent has been in the recovered class
-		recovered_count: { state-fluent, int, default = 0}; // Number of susceptible agents
 
 		is_home(agent) : { state-fluent, bool, default = false }; // agent is currently at home
 		is_working(agent) : { state-fluent, bool, default = false }; // agent is currently at work
@@ -82,7 +77,7 @@ domain covid-sim {
 		masked(agent) : { state-fluent, bool, default = false }; // agent is currently wearing a mask
 		vaccinated(agent) : { state-fluent, bool, default = false }; // agent is currently vaccinated
 
-		time_of_day : { state-fluent, int, default = 0 }; // Tracks the time of day (day or night)
+		day : { state-fluent, bool, default = true }; // Tracks the time of day (day or night)
 		day_of_week : { state-fluent, int, default = 1 }; // Tracks the day of the week (Monday = 1/2, ...,  Sunday = 13/14)
 
 		vaccine_implemented : { state-fluent, bool, default = false }; // vaccine mandate has been implemented for all agents
@@ -95,6 +90,10 @@ domain covid-sim {
 
 		mask-implemented : { interm-fluent, bool}; // mask mandate has been implemented for all agents
 		mask-implemented-students : { interm-fluent, bool}; // mask mandate has been implemented for students
+		weekday : { interm-fluent, bool};
+		weekend1 : { interm-fluent, bool};
+		weekend2 : { interm-fluent, bool};
+		susceptible(agent) : { interm-fluent, bool}; // agent is susceptible to catching disease
 		exposed-to-infectious(agent) : { interm-fluent, bool}; //Denotes that an agent is moving from the exposed to infected class
 		infectious-to-recovered(agent) : { interm-fluent, bool};//Denotes that an agent is moving from the infected to recovered class
 		recovered-to-susceptible(agent) : { interm-fluent, bool}; //Denotes that an agent is moving from the recovered to susceptible class
@@ -111,12 +110,12 @@ domain covid-sim {
 
 	cpfs {
 
-		//Flips between 0 and 1 - day and night
-		time_of_day' = 
-			if (time_of_day == 1)
-				then 0
+		//Flips between true and false - day and night
+		day' = 
+			if (~day)
+				then true
 			else
-				1
+				false
 		;
 
 		//Ticks up to 14 and then goes back to 1. Each day is 2 ticks for day and nights
@@ -127,9 +126,30 @@ domain covid-sim {
 				day_of_week + 1
 		;
 
+		weekday =
+			if (day_of_week <= 10)
+				then true
+			else
+				false
+		;
+
+		weekend1 =
+			if (day_of_week >= 11 ^ day_of_week <= 12)
+				then true
+			else
+				false
+		;
+
+		weekend2 =
+			if (day_of_week >= 13 ^ day_of_week <= 14)
+				then true
+			else
+				false
+		;
+
 		//Checks to see if an agent is at home - night = 1 = at home
 		is_home'(?a) = 
-			if (time_of_day == 1 | isolating(?a) ^ ~(hospitalized_non_ICU(?a) | hospitalized_ICU(?a)))
+			if (~day | isolating(?a) ^ ~(hospitalized_non_ICU(?a) | hospitalized_ICU(?a)))
 				then true
 			else
 				false
@@ -137,7 +157,7 @@ domain covid-sim {
 		
 		//Checks to see if an agent is working - day + a weekday = working
 		is_working'(?a) =
-			if (time_of_day == 0 ^ day_of_week <= 10 ^ ~isolating(?a) ^ ~(hospitalized_non_ICU(?a) | hospitalized_ICU(?a)))
+			if (day ^ weekday ^ ~isolating(?a) ^ ~(hospitalized_non_ICU(?a) | hospitalized_ICU(?a)))
 				then true
 			else
 				false
@@ -145,7 +165,7 @@ domain covid-sim {
 		
 		//Checks to see if an agent is shopping - day + a weekend = shopping
 		is_shopping'(?a) =
-			if (time_of_day == 0 ^ day_of_week >= 11 ^ ~isolating(?a) ^ ~(hospitalized_non_ICU(?a) | hospitalized_ICU(?a)))
+			if (day ^ (weekend1 | weekend2) ^ ~isolating(?a) ^ ~(hospitalized_non_ICU(?a) | hospitalized_ICU(?a)))
 				then true
 			else
 				false
@@ -153,32 +173,14 @@ domain covid-sim {
 
 		//Counts the total number of susceptible agents
 		susceptible_count' =
-			sum_{?a : agent} [~exposed(?a) ^ ~infectious(?a) ^ ~recovered(?a)]
+			sum_{?a : agent} [susceptible(?a)]
 		;
 
-		//Counts the total number of exposed agents
-		exposed_count' =
-			sum_{?a : agent} [exposed(?a)]
-		;
-
-		//Counts the total number of infectious agents
-		infectious_count' =
-			sum_{?a : agent} [infectious(?a)]
-		;
-
-		//Counts the total number of infectious agents
-		recovered_count' =
-			sum_{?a : agent} [recovered(?a)]
-		;
-
-		//Counts the total number of agents in a regular hospital bed
-		hospitalized_non_ICU_count' =
-			sum_{?a : agent} [hospitalized_non_ICU(?a)]
-		;
-
-		//Counts the total number of agents in an ICU hospital bed
-		hospitalized_ICU_count' =
-			sum_{?a : agent} [hospitalized_ICU(?a)]
+		susceptible(?a) = 
+			if (~exposed(?a) ^ ~infectious(?a) ^ ~recovered(?a))
+				then true
+			else
+				false
 		;
 
 		//Calculates the time an agent will be in the exposed class
@@ -209,7 +211,7 @@ domain covid-sim {
 		exposed'(?a) =
 
 			//If working + susceptible, then perform: Bern(#infectious / total), multiplying each infectious agent + starting agent by MASK_FACTOR if wearing a mask, VACCINE_FACTOR if vaccinated
-			if (is_working(?a) ^ (~exposed(?a) ^ ~infectious(?a) ^ ~recovered(?a)))
+			if (is_working(?a) ^ susceptible(?a))
 				then
 					if (
 						(sum_{?a2 : agent}
@@ -224,7 +226,7 @@ domain covid-sim {
 										(
 											R_NAUGHT / infectious_total_time(?a2) /
 
-											(1 + (sum_{?a3 : agent}[AGENT_JOB(?a) == AGENT_JOB(?a3)]))
+											(1 + (sum_{?a3 : agent}[(AGENT_JOB(?a) == AGENT_JOB(?a3)) ^ susceptible(?a3)]))
 
 										)
 
@@ -236,8 +238,7 @@ domain covid-sim {
 					 >= 1) then true
 					 else false
 
-			//If home + susceptible, then perform: (Bern(#infectious / total) | Bern(#infectious / total)) - basically trying twice - multiplying each infectious agent + starting agent by MASK_FACTOR if wearing a mask, VACCINE_FACTOR if vaccinated
-			else if (is_home(?a) ^ (~exposed(?a) ^ ~infectious(?a) ^ ~recovered(?a)))
+			else if (is_home(?a) ^ susceptible(?a))
 				then
 					if (
 						(sum_{?a2 : agent}
@@ -252,7 +253,7 @@ domain covid-sim {
 										(
 											R_NAUGHT / infectious_total_time(?a2) /
 
-											(1 + (sum_{?a3 : agent}[AGENT_HOME(?a) == AGENT_HOME(?a3)]))
+											(1 + (sum_{?a3 : agent}[(AGENT_HOME(?a) == AGENT_HOME(?a3)) ^ susceptible(?a3)]))
 
 										)
 
@@ -265,9 +266,9 @@ domain covid-sim {
 					 else false
 
 			//If shopping + susceptible, then perform: Bern(#infectious / total), multiplying each infectious agent + starting agent by MASK_FACTOR if wearing a mask,  VACCINE_FACTOR if vaccinated
-			else if (is_shopping(?a) ^ (~exposed(?a) ^ ~infectious(?a) ^ ~recovered(?a)))
+			else if (is_shopping(?a) ^ susceptible(?a))
 				then
-					if (day_of_week == 11)
+					if (weekend1)
 						then
 							if (
 								(sum_{?a2 : agent}
@@ -282,7 +283,7 @@ domain covid-sim {
 												(
 													R_NAUGHT / infectious_total_time(?a2) /
 
-													(1 + (sum_{?a3 : agent}[AGENT_STORE_1(?a) == AGENT_STORE_1(?a3)]))
+													(1 + (sum_{?a3 : agent}[(AGENT_STORE_1(?a) == AGENT_STORE_1(?a3)) ^ susceptible(?a3)]))
 
 												)
 
@@ -308,7 +309,7 @@ domain covid-sim {
 											(
 												R_NAUGHT / infectious_total_time(?a2) /
 
-												(1 + (sum_{?a3 : agent}[AGENT_STORE_2(?a) == AGENT_STORE_2(?a3)]))
+												(1 + (sum_{?a3 : agent}[(AGENT_STORE_2(?a) == AGENT_STORE_2(?a3)) ^ susceptible(?a3)]))
 
 											)
 
@@ -341,6 +342,7 @@ domain covid-sim {
 					}
 			else
 				infectious_total_time(?a)
+			
 		;
 
 		//Counts the current time in the infectious class
@@ -458,6 +460,7 @@ domain covid-sim {
 				then false
 			else
 				isolating(?a)
+			false
 		;
 
 		//When an agent becomes infectious, they have a chance to be hospitalized based on their age bracket
@@ -498,7 +501,7 @@ domain covid-sim {
 		recovered_total_time'(?a) =
 			if (infectious-to-recovered(?a))
 				//then Normal(15,3)
-				then 28
+				then 2
 			else
 				recovered_total_time(?a)
 		;
@@ -546,6 +549,7 @@ domain covid-sim {
 			
 			else
 				false
+			false
 		;
 		
 		//Keeps track of whether the vaccine has been implemented or not for all agents, so the planner can't just use the action over and over
@@ -629,6 +633,7 @@ domain covid-sim {
 
 			else
 				vaccinated(?a)
+			false
 		;
 
 	};

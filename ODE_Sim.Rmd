@@ -1,0 +1,56 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+require(deSolve)
+
+ seirmod=function(t, y, parms){
+   #Pull state variables from y vector
+   S=y[1]
+   E=y[2]
+   I=y[3]
+   R=y[4]
+   #Pull the required parameter values from the parms vector
+   beta=parms["beta"]
+   kappa=parms["kappa"]
+   alpha=parms["alpha"]
+   rec = parms["rec"]
+   N=parms["N"]
+   #Define the equations (use what you wrote out in question 1) - 6 points
+   dS = -(beta*S*I/N) + (rec*R)
+   dE = (beta*S*I/N) - (kappa*E)
+   dI = (kappa*E) - (alpha*I)
+   dR = (alpha*I) - (rec*R)
+   res=c(dS, dE, dI, dR)
+   #Return list of gradients
+   list(res)
+ }
+
+```
+
+```{r}
+times  = seq(0, 200, by=1)
+parms  = c(beta=0.2075, kappa=1/9, alpha=1/16, N=100, rec=1/14)
+start = c(S=88, E=0, I=12, R = 0)
+```
+
+```{r}
+out = ode(y = start, times = times, func = seirmod, 
+     parms = parms)
+out=as.data.frame(out)
+head(round(out, 3))
+tail(round(out, 3))
+```
+
+```{r}
+plot(x = out$time, y = out$S, col = "green", ylab = "Number of individuals", 
+      xlab = "Time (days)", type = "l", xlim = c(0, 200), ylim = c(0,100))
+ lines(x = out$time, y = out$E, col = "yellow")
+ lines(x = out$time, y = out$I, col = "red")
+ lines(x = out$time, y = out$R, col = "blue")
+#note that this figure is generated using simple plotting and not ggplot. 
+#ggplot is a great R tool for plotting that you might want to look into. 
+```
+

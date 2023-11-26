@@ -42,14 +42,14 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Configure simulation parameters")
 
     #Residence populations. The number of students in residence at each post-secondary institution (default ratio roughly corresponds to real-life numbers)
-    parser.add_argument("--queens_residence_pop", type=int, default=40, help="Enter the Queen's residence population")
-    parser.add_argument("--slc_residence_pop", type=int, default=3, help="Enter the SLC residence population")
-    parser.add_argument("--rmc_residence_pop", type=int, default=11, help="Enter the RMC residence population")
+    parser.add_argument("--queens_residence_pop", type=int, default=2, help="Enter the Queen's residence population")
+    parser.add_argument("--slc_residence_pop", type=int, default=2, help="Enter the SLC residence population")
+    parser.add_argument("--rmc_residence_pop", type=int, default=2, help="Enter the RMC residence population")
 
     #Total post-secondary school populations
-    parser.add_argument("--queens_pop", type=int, default=50, help="Enter the total Queen's population")
-    parser.add_argument("--slc_pop", type=int, default=3, help="Enter the total SLC population")
-    parser.add_argument("--rmc_pop", type=int, default=12, help="Enter the total RMC population")
+    parser.add_argument("--queens_pop", type=int, default=4, help="Enter the total Queen's population")
+    parser.add_argument("--slc_pop", type=int, default=4, help="Enter the total SLC population")
+    parser.add_argument("--rmc_pop", type=int, default=4, help="Enter the total RMC population")
 
     #Kingston population. Roughly the total number of agents that will be in the simulation (can be up to 4 more due to home population generation)
     parser.add_argument("--kingston_pop", type=int, default=100, help="Enter the total population")
@@ -559,7 +559,7 @@ def write_to_RDDL(agent_complete, args):
         f.write('\t};')
         f.write('\n')
         f.write('\n')
-        f.write('\thorizon = 100;')
+        f.write('\thorizon = 300;')
         f.write('\n')
         f.write('\tdiscount = 1.0;')
         f.write('\n')

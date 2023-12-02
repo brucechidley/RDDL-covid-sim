@@ -1,6 +1,5 @@
 //Bruce Chidley, 20104323
 //CISC 813: Automated Planning
-//Project Draft
 
 
 domain covid-sim {
@@ -497,10 +496,9 @@ domain covid-sim {
 				false
 		;
 
-		//Calculates the time an agent will be in the recovered class on EACH ITERATION. This is so that recovered can update at the same time, and so that the planner does not know when this will happen in advance
+		//Calculates the time an agent will be in the recovered class
 		recovered_total_time'(?a) =
 			if (infectious-to-recovered(?a))
-				//then Normal(15,3)
 				then 28
 			else
 				recovered_total_time(?a)

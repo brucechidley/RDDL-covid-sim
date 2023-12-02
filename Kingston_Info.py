@@ -1,3 +1,6 @@
+#Author: Bruce Chidley
+#This file retrieves Kingston data and writes to a RDDL problem file for the purpose of agent-based disease simulation
+
 #Call this file when generating problem files
 
 import osmnx as ox
@@ -34,22 +37,17 @@ home_probs = [0.329, 0.362, 0.138, 0.113, 0.057]
 #Parse arguments
 def parse_arguments():
 
-    """
-    This function takes input form the command line, or alternatively sets it to a default. 
-    """
-
-    # gis.py arguments
     parser = argparse.ArgumentParser(description="Configure simulation parameters")
 
     #Residence populations. The number of students in residence at each post-secondary institution (default ratio roughly corresponds to real-life numbers)
-    parser.add_argument("--queens_residence_pop", type=int, default=2, help="Enter the Queen's residence population")
-    parser.add_argument("--slc_residence_pop", type=int, default=2, help="Enter the SLC residence population")
-    parser.add_argument("--rmc_residence_pop", type=int, default=2, help="Enter the RMC residence population")
+    parser.add_argument("--queens_residence_pop", type=int, default=30, help="Enter the Queen's residence population")
+    parser.add_argument("--slc_residence_pop", type=int, default=3, help="Enter the SLC residence population")
+    parser.add_argument("--rmc_residence_pop", type=int, default=10, help="Enter the RMC residence population")
 
     #Total post-secondary school populations
-    parser.add_argument("--queens_pop", type=int, default=4, help="Enter the total Queen's population")
-    parser.add_argument("--slc_pop", type=int, default=4, help="Enter the total SLC population")
-    parser.add_argument("--rmc_pop", type=int, default=4, help="Enter the total RMC population")
+    parser.add_argument("--queens_pop", type=int, default=40, help="Enter the total Queen's population")
+    parser.add_argument("--slc_pop", type=int, default=5, help="Enter the total SLC population")
+    parser.add_argument("--rmc_pop", type=int, default=13, help="Enter the total RMC population")
 
     #Kingston population. Roughly the total number of agents that will be in the simulation (can be up to 4 more due to home population generation)
     parser.add_argument("--kingston_pop", type=int, default=100, help="Enter the total population")
@@ -77,6 +75,13 @@ def parse_arguments():
     parser.add_argument("--non_icu_beds", type=int, default=2, help="Enter the total number of non-ICU beds")
     parser.add_argument("--icu_beds", type=int, default=1, help="Enter the total number of ICU beds")
 
+    #The number of time steps for the simulation
+    parser.add_argument("--horizon", type=int, default=100, help="Enter the desired number of time steps (horizon)")
+    
+    parser.add_argument("--mode", type=str, default="Init", help="Enter the desired mode (Init if you are creating new problem files, Test if you are drawing from existing problem files)")
+    parser.add_argument("--iters", type=int, default=20, help="Enter the number of iterations you wish to run")
+    parser.add_argument("--trials", type=int, default=20, help="Enter the number of trials per iteration you wish to run")
+
     return parser.parse_args()
 
 
@@ -102,7 +107,7 @@ def fetch_places_of_interest():
             places_of_interest[key].append([building["building"], (centroid.x, centroid.y)])
     return places_of_interest
 
-#Organize all locations so that they are usable for the RDDL instance file creation
+#Organize all locations so that they are usable for the RDDL problem file creation
 #Takes the list of locations output by fetch_places_of_interest(), and the Python file arguments
 #Returns a sample of all locations in a dictionary that have the following structure:
 #   residential: a list with each element as such -> [type of dwelling, (longitude, latitude), building capacity (only applicable for dorms and apartments), affiliation (queens, slc, rmc, or general), unique tag, distance to closest post-secondary school]
@@ -132,12 +137,12 @@ def organize_locs(all_locs, args):
         #Home is closest to Queen's
         if (d_to_queens_main==min(d_to_queens_main, d_to_queens_west, d_to_slc, d_to_rmc) or d_to_queens_west== min(d_to_queens_main, d_to_queens_west, d_to_slc, d_to_rmc)):
 
-            #If it is a dorm, then assign the Queen's residence population to it
+            #If it is a dorm, then assign the Queen's residence population to it (Will be scaled down later)
             if (item[0] == 'dormitory'):
                 item.append(args.queens_residence_pop)
                 queens_res_list.append(item)
             
-            #If it is a dorm, then assign the Kingston residence population to it
+            #If it is a dorm, then assign the Kingston residence population to it (Will be scaled down later)
             elif (item[0] == 'apartments'):
                 item.append(args.kingston_pop)
                 apartment_list.append(item)
@@ -155,7 +160,7 @@ def organize_locs(all_locs, args):
         elif (d_to_slc== min(d_to_queens_main, d_to_queens_west, d_to_slc, d_to_rmc)):
 
 
-            #If it is a dorm, then assign the SLC's residence population to it
+            #If it is a dorm, then assign the SLC's residence population to it (Will be scaled down later)
             if (item[0] == 'dormitory'):
                 item.append(args.slc_residence_pop)
                 slc_res_list.append(item)
@@ -173,7 +178,7 @@ def organize_locs(all_locs, args):
         #Home is closest to RMC
         elif (d_to_rmc== min(d_to_queens_main, d_to_queens_west, d_to_slc, d_to_rmc)):
 
-            #If it is a dorm, then assign the RMC's residence population to it
+            #If it is a dorm, then assign the RMC's residence population to it (Will be scaled down later)
             if (item[0] == 'dormitory'):
                 item.append(args.rmc_residence_pop)
                 rmc_res_list.append(item)
@@ -190,8 +195,8 @@ def organize_locs(all_locs, args):
     
         home_counter += 1
 
-    #Takes samples of the residential buildings
-    #It is done this way to ensure that residence buildings for each campus are present in meaningful ways.
+    #Takes a random sample of the dormitory buildings
+    #It is done this way to ensure that dormitory buildings for each campus are present in meaningful ways.
     #Simply taking a sample of the entire residential building list could leave out important residences
     queens_res_list = random.sample(queens_res_list, args.queens_residences)
     rmc_res_list = random.sample(rmc_res_list, args.rmc_residences)
@@ -199,7 +204,7 @@ def organize_locs(all_locs, args):
 
     #Leaves room for roughly 20 people per apartment
     apartment_list = random.sample(apartment_list, max(1, min(len(apartment_list), round((args.kingston_pop - args.queens_pop - args.slc_pop - args.rmc_pop) / 20))))
-    #Leaves room for 1 person per home
+    #Leaves room for 1 person per home (will be more than 1 in reality due to the nature of home population)
     other_home_list = random.sample(other_home_list, (args.kingston_pop - args.queens_pop - args.slc_pop - args.rmc_pop))
 
     #Assigning buildings capacity according to the user-specified populations
@@ -220,7 +225,7 @@ def organize_locs(all_locs, args):
     rmc_edu_list = []
     other_edu_list = []
 
-    #Job counter is used for both education environments and workplaces. This is because an agent will either go to school or work, and so we give them unique tags simultaneously
+    #Job counter is used for both education environments and workplaces, and represents the building's unique tag. This is because an agent will either go to school or work, and so we give them unique tags simultaneously
     job_counter = 0
     for item in all_locs['education']:
         if (item[0] == 'college'):
@@ -250,16 +255,18 @@ def organize_locs(all_locs, args):
 
         job_counter += 1
 
+    #Workplaces use the same counter
+    for item in all_locs['work']:
+
+        item.append(job_counter)
+        job_counter += 1
+    
+    #Stores are given tags in the same way, using a separate counter
     store_counter = 0
     for item in all_locs['commercial']:
 
         item.append(store_counter)
         store_counter += 1
-
-    for item in all_locs['work']:
-
-        item.append(job_counter)
-        job_counter += 1
 
     #Once again, samples are taken in this way to ensure that post-secondary education buildings are present
     #Roughly 20 students per post-secondary education building, and 50 students per general school
@@ -270,7 +277,7 @@ def organize_locs(all_locs, args):
 
     #Roughly 15 people per commercial building
     commercial_list = random.sample(all_locs['commercial'], max(1, min(len(all_locs['commercial']), round(args.kingston_pop / 15))))
-    
+
     #Roughly 20 people per workplace
     work_list = random.sample(all_locs['work'], max(1, min(len(all_locs['work']), round(args.kingston_pop / 20))))
 
@@ -437,8 +444,8 @@ def assign_store(home_coords, stores_list, num_stores):
 
     store_return = []
 
+    #Loops through all stores to find which one is the closest to the input home coordinates
     for i in range(0, num_stores):
-        #For each agent, loops through all stores to find which one is the closest
         min_d_to_store = ox.distance.euclidean(home_coords[0], home_coords[1], temp[0][1][0], temp[0][1][1])
         coords = temp[0][1]
         assignment = temp[0][2]
@@ -460,9 +467,10 @@ def assign_store(home_coords, stores_list, num_stores):
     return store_return
 
 
+#Writes info to RDDL problem file
+#Takes the list of all agents with all assigned information, and the passed arguments
 def write_to_RDDL(agent_complete, args):
 
-    #Writes info to RDDL instance file
     with open('problem.rddl', 'w') as f:
         f.write ('non-fluents covid-sim_nf_1 {')
         f.write('\n')
@@ -559,7 +567,7 @@ def write_to_RDDL(agent_complete, args):
         f.write('\t};')
         f.write('\n')
         f.write('\n')
-        f.write('\thorizon = 300;')
+        f.write('\thorizon = ' + str(args.horizon) + ';')
         f.write('\n')
         f.write('\tdiscount = 1.0;')
         f.write('\n')
@@ -567,17 +575,19 @@ def write_to_RDDL(agent_complete, args):
 
 def main():
 
-
     args = parse_arguments()
 
+    #Collects locations via the OSMnx package
     locs = fetch_places_of_interest()
 
+    #Organizes the locations and performs some population and distance calcualtions
     organized_locs = organize_locs(locs, args)
 
     #Retrieves all dorms
     all_residences = []
     other_homes = []
 
+    #Separates the dormitories out for ease of processing
     for item in organized_locs['residential']:
         if (item[0] == 'dormitory'):
             all_residences.append(item)
@@ -591,6 +601,7 @@ def main():
     slc = []
     rmc = []
 
+    #Separates the types of schools for ease of processing
     for item in organized_locs['education']:
         if (item[0] == 'school'):
             all_schools.append(item)
@@ -608,6 +619,7 @@ def main():
     #Calls the functions
     agent_complete = assign_agents(organized_locs['residential'], all_schools, organized_locs['commercial'], queens, slc, rmc, organized_locs['work'], school_populations, general_population)
 
+    #Write everything to a RDDL problem file
     write_to_RDDL(agent_complete, args)
 
 if __name__ == "__main__":

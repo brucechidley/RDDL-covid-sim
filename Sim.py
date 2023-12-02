@@ -1,3 +1,7 @@
+#Author: Bruce Chidley
+#This file runs simulations for the COVID-19 RDDL model
+#Will call upon Kingston_Info.py, so ensure that the arguments are defined as needed
+
 import time
 import jax
 import numpy as np
@@ -6,12 +10,14 @@ import os
 import json
 import shutil
 from pprint import pprint
+from pathlib import Path
 
 import Kingston_Info
 
+import argparse
+
 from pyRDDLGym import RDDLEnv
 from pyRDDLGym.Visualizer.MovieGenerator import MovieGenerator
-# from pyRDDLGym import ExampleManager
 
 from pyRDDLGym.Core.Policies.Agents import RandomAgent
 
@@ -19,8 +25,7 @@ from pyRDDLGym.Core.Jax.JaxRDDLBackpropPlanner import load_config
 from pyRDDLGym.Core.Jax.JaxRDDLBackpropPlanner import JaxRDDLBackpropPlanner
 from pyRDDLGym.Core.Jax.JaxRDDLBackpropPlanner import JaxOfflineController
 
-#agent = None
-
+#Defining the two types of planners that can be used. When simulating without actions, use_random() is much faster. When using actions, must do use_jax()
 def use_random():
     global agent
     agent = RandomAgent(action_space=myEnv.action_space,
@@ -34,119 +39,223 @@ def use_jax():
     planner = JaxRDDLBackpropPlanner(rddl=myEnv.model, **planner_args)
     agent = JaxOfflineController(planner, **train_args)
 
-iterations = 1
+def parse_arguments():
 
-trials = 1000
+    parser = argparse.ArgumentParser(description="Configure simulation parameters")
 
-folder_list = ["Images_rec14_benchmark"] 
+    #Residence populations. The number of students in residence at each post-secondary institution (default ratio roughly corresponds to real-life numbers)
+    parser.add_argument("--queens_residence_pop", type=int, default=30, help="Enter the Queen's residence population")
+    parser.add_argument("--slc_residence_pop", type=int, default=3, help="Enter the SLC residence population")
+    parser.add_argument("--rmc_residence_pop", type=int, default=10, help="Enter the RMC residence population")
 
-source_file_folder_list = ["Images_rec14_benchmark/"]
+    #Total post-secondary school populations
+    parser.add_argument("--queens_pop", type=int, default=40, help="Enter the total Queen's population")
+    parser.add_argument("--slc_pop", type=int, default=5, help="Enter the total SLC population")
+    parser.add_argument("--rmc_pop", type=int, default=13, help="Enter the total RMC population")
 
+    #Kingston population. Roughly the total number of agents that will be in the simulation (can be up to 4 more due to home population generation)
+    parser.add_argument("--kingston_pop", type=int, default=100, help="Enter the total population")
+
+    #Number of residences at each post-secondary institution (except for SLC, which only has 1 residence)
+    parser.add_argument("--queens_residences", type=int, default=4, help="Enter the number of Queen's residences")
+    parser.add_argument("--rmc_residences", type=int, default=1, help="Enter the number of RMC residences")
+
+    #Penalties associated with the simulation and planner actions
+    parser.add_argument("--mask_penalty_all", type=float, default=-10, help="Enter the mask penalty factor for all agents")
+    parser.add_argument("--vaccine_penalty_all", type=float, default=-10, help="Enter the vaccine penalty factor for all agents")
+    parser.add_argument("--mask_penalty_students", type=float, default=-5, help="Enter the mask penalty factor for students")
+    parser.add_argument("--vaccine_penalty_students", type=float, default=-5, help="Enter the vaccine penalty factor for students")
+    parser.add_argument("--non_icu_penalty", type=float, default=-8000, help="Enter the non-ICU penalty factor")
+    parser.add_argument("--icu_penalty", type=float, default=-8000, help="Enter the ICU penalty factor")
+
+    #The factors that will be multiplied with transmission chance
+    parser.add_argument("--mask_factor", type=float, default=0.8, help="Enter the factor that wearing a mask multiplies transmission rate by")
+    parser.add_argument("--vaccine_factor", type=float, default=0.4, help="Enter the factor that being vaccinated multiplies transmission rate by")
+
+    #The chance an agent wears a mask
+    parser.add_argument("--mask_chance", type=float, default=0.7, help="Enter the chance that an agent wears a mask")
+
+    #The total number of non-ICU and ICU beds
+    parser.add_argument("--non_icu_beds", type=int, default=2, help="Enter the total number of non-ICU beds")
+    parser.add_argument("--icu_beds", type=int, default=1, help="Enter the total number of ICU beds")
+
+    #The number of time steps for the simulation
+    parser.add_argument("--horizon", type=int, default=100, help="Enter the desired number of time steps (horizon)")
+    
+    #Defines the way the simulation is run
+    parser.add_argument("--mode", type=str, default="Init", help="Enter the desired mode (Init if you are creating new problem files, Test if you are drawing from existing problem files)")
+    parser.add_argument("--iters", type=int, default=20, help="Enter the number of iterations you wish to run")
+    parser.add_argument("--trials", type=int, default=20, help="Enter the number of trials per iteration you wish to run")
+
+    return parser.parse_args()
+
+args_sim = parse_arguments()
+
+#Each iteration is a different problem file
+iterations = args_sim.iters
+
+#Trials = Number of simulations per problem file 
+trials = args_sim.trials
+
+#Folders that the results of the simulation will be saved to (CHANGE AS NEEDED)
+folder_list = ["rec2_iso_03", "rec2_iso_05", "rec2_iso_07"] 
+
+#Domains that the problem files will be run on (CHANGE AS NEEDED)
+#Must be the same length as folder_list, and the domains at each index must be for the folders at the same index
+domain_list = ["domain_rec2_iso_03", "domain_rec2_iso_05", "domain_rec2_iso_07"]
+
+#Folders that the problem files will be drawn from (CHANGE AS NEEDED)
+#If we are initializing problem files, then it simply copies folder_list
+#If we are drawing from existing problem files, then that should not change for the whole run, and so it is only one folder
+source_file_folder_list = []
+if args_sim.mode == "Init":
+    source_file_folder_list = folder_list.copy()
+elif args_sim.mode == "Test":
+
+    #Source file when testing (CHANGE AS NEEDED)
+    source_file_folder = "rec2_iso_03"
+
+
+#Loops over all folders, indicating a different domain/configuration
 for folder_num in range (0, len(folder_list)):
+
+    #Tracks the current target and source folder
     folder = folder_list[folder_num]
+    Path(folder_list[folder_num]).mkdir(parents=True, exist_ok=True)
 
-    source_file_folder = source_file_folder_list[folder_num]
+    if args_sim.mode == "Init":
+        Path(folder_list[folder_num] + "/Problems").mkdir(parents=True, exist_ok=True)
+        source_file_folder = source_file_folder_list[folder_num]
 
-    all_rewards = []
-
-    infectious_counts = []
-
-    agent_counts = []
-
+    #Loops over the number of specified iterations
     for iter in range (0, iterations):
 
+        #Holds final rewards for each trial
         all_rewards_iter = []
 
+        #Holds the number of unique agents who become infectious on each trial
         infectious_counts_iter = []
 
+        #Holds the number of agents per trial
         agent_counts_iter = []
-
+    
+        #Holds the number of agents who are vaccinated/masked at each time step on each trial
         vaccinated_iter = []
         masked_iter = []
 
+        #Holds the number of agents in each class at each time step on each trial
         susceptible_iter = []
         exposed_iter = []
         infectious_iter = []
         recovered_iter = []
 
+        #Holds the number of agents isolated/hospitalized at each time step on each trial
         isolating_iter = []
         hospitalized_regular_iter = []
         hospitalized_ICU_iter = []
 
+        #Holds a 1 or 0 depending on whether the action is active or not (1 is active, 0 is not active)
         all_mask_iter = []
         student_mask_iter = []
         all_vaccinate_iter = []
         student_vaccinate_iter = []
 
+        #Tracks the current time step for each trial
         time_step_iter = []
 
+        #Tracks the agents that are infectious on each trial
         agents_infected_iter = []
 
+        #Tracks the seeds for all trials, for future testing purposes
         seeds_iter = []
 
-        #Kingston_Info.main()
 
-        #shutil.copy2('problem.rddl', str(folder) + '/Problems/problem' + str(iter) + '.rddl')
+        #New problem files are created if necessary
+        if args_sim.mode == "Init":
+            Kingston_Info.main()
+            shutil.copy2('problem.rddl', str(folder) + '/Problems/problem' + str(iter) + '.rddl')
+
 
         base_path = 'rddl'
         ENV = 'covid'
-
-        myEnv = RDDLEnv.RDDLEnv(domain='domain' + str(folder_num) + '.rddl', instance=str(source_file_folder) + 'Problems/problem' + str(iter) + '.rddl')
+        
+        #Generate the environment based on domain + problem file
+        myEnv = RDDLEnv.RDDLEnv(domain='Domains/' + str(domain_list[folder_num]) + '.rddl', instance=str(source_file_folder) + '/Problems/problem' + str(iter) + '.rddl')
         MovieGen = MovieGenerator('', ENV, myEnv.horizon)
         myEnv.set_visualizer(None, movie_gen=MovieGen, movie_per_episode=False)
         gif_name = f'{ENV}_chart'
 
         agent = None
 
-        os.mkdir(str(folder) + "/iter_" + str(iter))
+        #Create iteration folder
+        Path(str(folder) + "/iter_" + str(iter)).mkdir(parents=True, exist_ok=True)
 
+        #Create the agent (either jax planner or random)
         #use_jax()
         use_random()
 
+        #Open source json file for the purpose of extracting seeds for each simulation
+        #By using the same seed for each trial, per iteration, we can better analyze the effects of isolation and intervention
+        if args_sim.mode == "Test":
+            f = open(str(source_file_folder) + '/iter_' + str(iter) + '/data_iter_' + str(iter) + '.json')
+            data = json.load(f)
+            seed_list = eval(data['Seeds'])
 
-        #f = open(str(source_file_folder) + '/iter_' + str(iter) + '/data_iter_' + str(iter) + '.json')
-        #data = json.load(f)
-        #seed_list = eval(data['Seeds'])
-
+        #Loops over all trials
         for trial in range (0, trials):
 
+            #Tracks vaccinated/masked agents per time step
             vaccinated = []
             masked = []
 
+            #Tracks classes for agents per time step
             susceptible = []
             exposed = []
             infectious = []
             recovered = []
 
+            #Tracks isolated/hospitalized for agents per time step
             isolating = []
             hospitalized_regular = []
             hospitalized_ICU = []
 
+            #Tracks actions for agents per time step
             all_mask = []
             student_mask = []
             all_vaccinate = []
             student_vaccinate = []
 
+            #Tracks time steps
             time_step = []
 
+            #Tracks the agents who are infected per time step
             agents_infected = []
             total_agent_count = 0
 
+            #Resets the agent for each trial
             agent.reset()
 
+            #Sets the total reward back to 0 for each trial
             total_reward = 0
-            
-            current_seed = np.random.randint(100000)
+        
+            #Seed for the trial is either random or pulled from a list of seeds based on the source folder
 
-            #current_seed = int(seed_list[trial])
+            if args_sim.mode == "Init":
+                current_seed = np.random.randint(100000)
+            elif args_sim.mode == "Test":
+                current_seed = int(seed_list[trial])
 
             seeds_iter.append(current_seed)
+
+            #Reset environment based on seed
             state = myEnv.reset(seed=current_seed)
 
+            #Steps through the simulation
             for step in range(myEnv.horizon):
-
-
-                #policy_input = myEnv.sampler.subs
+                
+                #This is necessary when using JaxPlanner. policy_input goes in the brackets for agent.sample_action()
+                #Otherwise, comment this out and put "state" in the brackets for agent.sample_action()
+                policy_input = myEnv.sampler.subs
 
                 vaccinated_count = 0
                 masked_count = 0
@@ -159,7 +268,7 @@ for folder_num in range (0, len(folder_list)):
                 hospitalized_regular_count = 0
                 hospitalized_ICU_count = 0
 
-                action = agent.sample_action(state)
+                action = agent.sample_action(policy_input)
                 next_state, reward, done, info = myEnv.step(action)
                 total_reward += reward
 
@@ -169,7 +278,10 @@ for folder_num in range (0, len(folder_list)):
                 #print(f'next state = {next_state}')
                 #print(f'reward     = {reward}')
 
+                #Loops through all elements in the state dictionary
                 for key, value in state.items():
+
+                    #If an agent exhibits the following traits, increase the respective counter by 1
                     if key.startswith("vaccinated__") and value == True:
                         vaccinated_count += 1
                     elif key.startswith("masked__") and value == True:
@@ -190,6 +302,8 @@ for folder_num in range (0, len(folder_list)):
                         hospitalized_regular_count += 1
                     elif key.startswith("hospitalized_ICU__") and value == True:
                         hospitalized_ICU_count += 1
+
+                    #If action has been implemented, add 1. If not, add 0
                     elif key == "vaccine_implemented":
                         if value == True:
                             all_vaccinate.append(1)
@@ -229,19 +343,17 @@ for folder_num in range (0, len(folder_list)):
                     break
             print(f'episode ended with reward {total_reward}')
 
-            all_rewards.append(total_reward)
             all_rewards_iter.append(total_reward)
 
+            #Susceptible count lags behind by 1, so we get the value of the next step and pop the value of the first step
             for key, value in next_state.items():
                 if key == "susceptible_count":
                     susceptible.append(value)
                 elif key.startswith("infectious__"):
                     total_agent_count += 1
-            
-            agent_counts.append(total_agent_count)
+        
             agent_counts_iter.append(total_agent_count)
 
-            infectious_counts.append(len(agents_infected))
             infectious_counts_iter.append(len(agents_infected))
 
             susceptible.pop(0)
@@ -269,6 +381,7 @@ for folder_num in range (0, len(folder_list)):
 
             agents_infected_iter.append(agents_infected)
 
+            #Plot all the graphs
             plt.plot(time_step, susceptible, color='green', label='Susceptible')
             plt.plot(time_step, exposed, color='yellow', label='Exposed')
             plt.plot(time_step, infectious, color='red', label='Infectious')
@@ -318,11 +431,13 @@ for folder_num in range (0, len(folder_list)):
             plt.savefig(save_name)
             plt.clf()
 
+        #Calculate the percent infected on each trial
         percent_infected_iter = []
 
         for i in range (0, len(agent_counts_iter)):
             percent_infected_iter.append(round(((infectious_counts_iter[i]/agent_counts_iter[i]) * 100), 2))
 
+        #Write info to a text file
         with open(str(folder) + "/iter_" + str(iter) + "/"  + str(folder) + "_" + str(iter) + ".txt", 'w') as f:
             f.write ("All rewards: " + str(all_rewards_iter))
             f.write('\n')
@@ -340,6 +455,7 @@ for folder_num in range (0, len(folder_list)):
             f.write('\n')
             f.write("Average percent infected: " + str(round((sum(percent_infected_iter)/len(percent_infected_iter)), 2)))
 
+        #Write all detailed trial info to a json file
         data_dict = {
             "Vaccinated": str(vaccinated_iter),
             "Masked": str(masked_iter),
@@ -367,27 +483,3 @@ for folder_num in range (0, len(folder_list)):
 
         with open(str(folder) + "/iter_" + str(iter) + "/data_iter_" + str(iter) + ".json", "w") as outfile:
             outfile.write(json_object)
-
-"""
-percent_infected = []
-
-for i in range (0, len(agent_counts)):
-    percent_infected.append(round(((infectious_counts[i]/agent_counts[i]) * 100), 2))
-
-with open("Images_rec14_8000/results_rec14_8000_total.txt", 'w') as f:
-    f.write ("All rewards: " + str(all_rewards))
-    f.write('\n')
-    f.write("Average of all rewards: " + str(round((sum(all_rewards)/len(all_rewards)), 2)))
-    f.write('\n')
-    f.write("Agent Counts: " + str(agent_counts))
-    f.write('\n')
-    f.write("Average number of agents: " + str(round((sum(agent_counts)/len(agent_counts)), 2)))
-    f.write('\n')
-    f.write("Infectious counts: " + str(infectious_counts))
-    f.write('\n')
-    f.write("Average agents infected: " + str(round((sum(infectious_counts)/len(infectious_counts)), 2)))
-    f.write('\n')
-    f.write("Percent infected on each trial: " + str(percent_infected))
-    f.write('\n')
-    f.write("Average percent infected: " + str(round((sum(percent_infected)/len(percent_infected)), 2)))
-"""

@@ -18,7 +18,7 @@ require(deSolve)
    alpha=parms["alpha"]
    rec = parms["rec"]
    N=parms["N"]
-   #Define the equations (use what you wrote out in question 1) - 6 points
+   #Define the equations
    dS = -(beta*S*I/N) + (rec*R)
    dE = (beta*S*I/N) - (kappa*E)
    dI = (kappa*E) - (alpha*I)
@@ -31,9 +31,9 @@ require(deSolve)
 ```
 
 ```{r}
-times  = seq(0, 200, by=1)
-parms  = c(beta=0.2075, kappa=1/9, alpha=1/16, N=100, rec=1/14)
-start = c(S=88, E=0, I=12, R = 0)
+times  = seq(0, 300, by=1)
+parms  = c(beta=0.2075, kappa=1/9, alpha=1/16, N=105, rec=1/14)
+start = c(S=93, E=0, I=12, R = 0)
 ```
 
 ```{r}
@@ -45,12 +45,12 @@ tail(round(out, 3))
 ```
 
 ```{r}
-plot(x = out$time, y = out$S, col = "green", ylab = "Number of individuals", 
-      xlab = "Time (days)", type = "l", xlim = c(0, 200), ylim = c(0,100))
- lines(x = out$time, y = out$E, col = "yellow")
+plot(x = out$time, y = out$S, col = "green", ylab = "Number of Agents", 
+      xlab = "Time Steps", type = "l", xlim = c(0, 300), ylim = c(0,100))
+ lines(x = out$time, y = out$E, col = "orange")
  lines(x = out$time, y = out$I, col = "red")
  lines(x = out$time, y = out$R, col = "blue")
-#note that this figure is generated using simple plotting and not ggplot. 
-#ggplot is a great R tool for plotting that you might want to look into. 
+ title(main = "SEIR Over Time")
+ legend(225, 100, legend=c("Susceptible", "Exposed", "Infectious", "Recovered"), col=c("green", "orange", "red", "blue"), lty=1)
 ```
 

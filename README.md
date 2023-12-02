@@ -1,5 +1,7 @@
 # Modeling Disease Spread in a Community
 
+## Overview
+
 This RDDL domain models the spread of disease in a community. Agents, in this domain, move through the following SEIR states:
 
  - Susceptible: An agent does not have the disease, and has no natural immunity to it
@@ -31,4 +33,44 @@ All of these penalties are negative, and so the goal can be a maximum of 0. Thus
 
 ## Instructions
 
-AAAAAAAAHHH!!!!
+Clone the repo by executing the following command, or manually:
+
+'''
+git clone https://github.com/fhaghighi/DiRA.git
+'''
+
+From here, create and enter a [virtual environment](https://docs.python.org/3/library/venv.html), and install requirements as follows:
+
+'''
+pip3 install -r requirements.txt
+'''
+
+### Running Simulations
+
+Simulations are run by executing the Sim.py file. In addition to running the simulations, this file will call upon Kingston_Info.py, which is the file that generates problem files. Please ensure that all arguments outlined in these files are as desired - the default values are the ones used that generated the data in the paper. The number of iterations and trials are both set to 20 by default. Lowering these values speeds up execution time greatly and should be done for testing purposes.
+
+In the Sim.py, the user must specify folders that files will be read from and saved to. This must be edited directly in the Sim.py file itself, and these folders can be named whatever. Please ensure that every entry of "folder_list" directly corresponds to every entry of "domain_list", and that they are the same length.
+
+This file must initially be run in the "Init" mode (which is the default value for the --mode argument). In addition to running simulations as specified, this will generate and save problem files for future use. This should be run every time you wish to generate new problem files. Typically, this is done when creating a "base model" that will be compared to by other models. "folder_list" represents the target folders that simulation data will be saved to, in addition to the problem files. "domain_list" is a list of domains that will be used for each folder's simulations.
+
+From there Sim.py can be run in "Test" mode. This mode works by drawing upon previously generated problem files and seeds, and using those for the simulations. "folder_list" still represents the target folders, and should be edited as such. Likewise, "domain_list" works the same as before. This time "source_file_folder" must be changed to whatever the folder is that contains the problem files and seeds. This can only be one folder - hence, all folders in "folder_list" will be drawing from this one folder's problem files.
+
+The Sim.py has some default folders and domains as an example, and this can be run by executing the following:
+
+'''
+python3 Sim.py --mode Init --iters 2 --trials 2
+
+'''
+
+As a result of this, a folder named "rec2_no_intervention_no_iso" will have been created that has two subfolders: Problems, iter_0, and iter_1. Problems contains the generated problem files (only 2 here, since the --iters value was set to 2), and the iter folders contain images showing what happened in each trial visually in addition to a text file providing a brief summary of all trials, and a json file containing all data produced by each trial.
+
+To run the file in "Test" mode, the lists that are commented out below "folder_list" and "domain_list" can be uncommented, and the old lists can be removed. Then, the following can be run:
+
+'''
+python3 Sim.py --mode Test --iters 2 --trials 2
+'''
+
+This will generate a few more folders containing iteration data as previously described. This general process can be followed using any combination of arguments, within reason.
+
+### Analysis
+

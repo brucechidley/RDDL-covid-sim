@@ -1,0 +1,22 @@
+Improvements over base model using self-isolation and no intervention:
+Self-Isolation at rate 0.3: 0.249
+Self-Isolation at rate 0.5: 0.549
+Self-Isolation at rate 0.7: 0.7
+
+Improvement over base model using intervention and no self-isolation: 0.221
+
+Improvements over base model using self-isolation and intervention:
+Self-Isolation at rate 0.3: 0.38
+Self-Isolation at rate 0.5: 0.553
+Self-Isolation at rate 0.7: 0.639
+
+Improvements over model with only self-isolation using self-isolation and intervention:
+Self-Isolation at rate 0.3: 0.175
+Self-Isolation at rate 0.5: 0.01
+Self-Isolation at rate 0.7: -0.205
+
+Improvements over model with only intervention using self-isolation and intervention:
+Self-Isolation at rate 0.3: 0.204
+Self-Isolation at rate 0.5: 0.426
+Self-Isolation at rate 0.7: 0.536
+

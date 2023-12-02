@@ -191,8 +191,8 @@ for folder_num in range (0, len(folder_list)):
         Path(str(folder) + "/iter_" + str(iter)).mkdir(parents=True, exist_ok=True)
 
         #Create the agent (either jax planner or random)
-        #use_jax()
-        use_random()
+        use_jax()
+        #use_random()
 
         #Open source json file for the purpose of extracting seeds for each simulation
         #By using the same seed for each trial, per iteration, we can better analyze the effects of isolation and intervention

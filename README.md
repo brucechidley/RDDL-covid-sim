@@ -35,15 +35,15 @@ All of these penalties are negative, and so the goal can be a maximum of 0. Thus
 
 Clone the repo by executing the following command, or manually:
 
-'''
+```
 git clone https://github.com/fhaghighi/DiRA.git
-'''
+```
 
 From here, create and enter a [virtual environment](https://docs.python.org/3/library/venv.html), and install requirements as follows:
 
-'''
+```
 pip3 install -r requirements.txt
-'''
+```
 
 ### Running Simulations
 
@@ -57,20 +57,21 @@ From there Sim.py can be run in "Test" mode. This mode works by drawing upon pre
 
 The Sim.py has some default folders and domains as an example, and this can be run by executing the following:
 
-'''
+```
 python3 Sim.py --mode Init --iters 2 --trials 2
 
-'''
+```
 
 As a result of this, a folder named "rec2_no_intervention_no_iso" will have been created that has two subfolders: Problems, iter_0, and iter_1. Problems contains the generated problem files (only 2 here, since the --iters value was set to 2), and the iter folders contain images showing what happened in each trial visually in addition to a text file providing a brief summary of all trials, and a json file containing all data produced by each trial.
 
 To run the file in "Test" mode, the lists that are commented out below "folder_list" and "domain_list" can be uncommented, and the old lists can be removed. Then, the following can be run:
 
-'''
+```
 python3 Sim.py --mode Test --iters 2 --trials 2
-'''
+```
 
 This will generate a few more folders containing iteration data as previously described. This general process can be followed using any combination of arguments, within reason.
 
 ### Analysis
 
+The other files in this repo have to do with analyzing the data produced by simulations.

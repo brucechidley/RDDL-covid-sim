@@ -98,11 +98,17 @@ iterations = args_sim.iters
 trials = args_sim.trials
 
 #Folders that the results of the simulation will be saved to (CHANGE AS NEEDED)
-folder_list = ["rec2_iso_03", "rec2_iso_05", "rec2_iso_07"] 
+
+folder_list = ["rec2_no_intervention_no_iso"]
+
+#folder_list = ["rec2_iso_03", "rec2_iso_05", "rec2_iso_07"] 
 
 #Domains that the problem files will be run on (CHANGE AS NEEDED)
 #Must be the same length as folder_list, and the domains at each index must be for the folders at the same index
-domain_list = ["domain_rec2_iso_03", "domain_rec2_iso_05", "domain_rec2_iso_07"]
+
+domain_list = ["domain_rec2_no_intervention_no_iso"]
+
+#domain_list = ["domain_rec2_iso_03", "domain_rec2_iso_05", "domain_rec2_iso_07"]
 
 #Folders that the problem files will be drawn from (CHANGE AS NEEDED)
 #If we are initializing problem files, then it simply copies folder_list
@@ -113,7 +119,7 @@ if args_sim.mode == "Init":
 elif args_sim.mode == "Test":
 
     #Source file when testing (CHANGE AS NEEDED)
-    source_file_folder = "rec2_iso_03"
+    source_file_folder = "rec2_no_intervention_no_iso"
 
 
 #Loops over all folders, indicating a different domain/configuration

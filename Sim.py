@@ -110,14 +110,10 @@ domain_list = ["domain_rec2_no_intervention_no_iso"]
 
 #domain_list = ["domain_rec2_iso_03", "domain_rec2_iso_05", "domain_rec2_iso_07"]
 
-#Folders that the problem files will be drawn from (CHANGE AS NEEDED)
-#If we are initializing problem files, then it simply copies folder_list
+#Folder that the problem files will be drawn from (CHANGE AS NEEDED)
+#If we are initializing problem files, then we call from folder_list as defined earlier
 #If we are drawing from existing problem files, then that should not change for the whole run, and so it is only one folder
-source_file_folder_list = []
-if args_sim.mode == "Init":
-    source_file_folder_list = folder_list.copy()
-elif args_sim.mode == "Test":
-
+if args_sim.mode == "Test":
     #Source file when testing (CHANGE AS NEEDED)
     source_file_folder = "rec2_no_intervention_no_iso"
 
@@ -131,7 +127,7 @@ for folder_num in range (0, len(folder_list)):
 
     if args_sim.mode == "Init":
         Path(folder_list[folder_num] + "/Problems").mkdir(parents=True, exist_ok=True)
-        source_file_folder = source_file_folder_list[folder_num]
+        source_file_folder = folder_list[folder_num]
 
     #Loops over the number of specified iterations
     for iter in range (0, iterations):

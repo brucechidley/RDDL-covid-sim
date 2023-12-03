@@ -99,23 +99,23 @@ trials = args_sim.trials
 
 #Folders that the results of the simulation will be saved to (CHANGE AS NEEDED)
 
-folder_list = ["rec2_no_intervention_no_iso"]
+folder_list = ["test_base_folder"]
 
-#folder_list = ["rec2_iso_03", "rec2_iso_05", "rec2_iso_07"] 
+#folder_list = ["test_1_folder", "test_2_folder"] 
 
 #Domains that the problem files will be run on (CHANGE AS NEEDED)
 #Must be the same length as folder_list, and the domains at each index must be for the folders at the same index
 
 domain_list = ["domain_rec2_no_intervention_no_iso"]
 
-#domain_list = ["domain_rec2_iso_03", "domain_rec2_iso_05", "domain_rec2_iso_07"]
+#domain_list = ["domain_rec2_iso_03", "domain_rec2_iso_05"]
 
 #Folder that the problem files will be drawn from (CHANGE AS NEEDED)
 #If we are initializing problem files, then we call from folder_list as defined earlier
 #If we are drawing from existing problem files, then that should not change for the whole run, and so it is only one folder
 if args_sim.mode == "Test":
     #Source file when testing (CHANGE AS NEEDED)
-    source_file_folder = "rec2_no_intervention_no_iso"
+    source_file_folder = "test_base_folder"
 
 
 #Loops over all folders, indicating a different domain/configuration
@@ -418,16 +418,26 @@ for folder_num in range (0, len(folder_list)):
             figure, axis = plt.subplots(2, 2) 
 
             axis[0, 0].plot(time_step, all_mask, color='blue', label='all_mask') 
-            axis[0, 0].set_title("all_mask action over time") 
+            axis[0, 0].set_title("all_mask action over time")
+            plt.sca(axis[0, 0])
+            plt.yticks([0,1], ['Off', 'On']) 
 
             axis[0, 1].plot(time_step, student_mask, color='blue', label='student_mask') 
             axis[0, 1].set_title("student_mask action over time") 
+            plt.sca(axis[0, 1])
+            plt.yticks([0,1], ['Off', 'On'])
 
             axis[1, 0].plot(time_step, all_vaccinate, color='blue', label='all_vaccinate') 
             axis[1, 0].set_title("all_vaccinate action over time") 
+            plt.sca(axis[1, 0])
+            plt.yticks([0,1], ['Off', 'On'])
 
             axis[1, 1].plot(time_step, student_vaccinate, color='blue', label='student_vaccinate') 
-            axis[1, 1].set_title("student_vaccinate action over time") 
+            axis[1, 1].set_title("student_vaccinate action over time")
+            plt.sca(axis[1, 1])
+            plt.yticks([0,1], ['Off', 'On'])
+
+            plt.tight_layout()
 
             save_name = str(folder) + "/iter_" + str(iter) + "/trial_" + str(trial) + "_actions.png"
             plt.savefig(save_name)

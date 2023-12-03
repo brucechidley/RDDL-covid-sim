@@ -29,7 +29,7 @@ average_rewards_intervention = []
 
 #CHANGE AS NEEDED
 #This is the number of iterations that each model was run on
-iter = 20
+iter = 2
 
 
 #Appends all rewards for each iterations (20 rewards for the 20 total trials) to a 2D list

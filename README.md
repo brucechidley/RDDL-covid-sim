@@ -62,7 +62,7 @@ python3 Sim.py --mode Init --iters 2 --trials 2
 
 ```
 
-As a result of this, a folder named "rec2_no_intervention_no_iso" will have been created that has two subfolders: Problems, iter_0, and iter_1. Problems contains the generated problem files (only 2 here, since the --iters value was set to 2), and the iter folders contain images showing what happened in each trial visually (examples located in the Images folder of this repo) in addition to a text file providing a brief summary of all trials, and a json file containing all data produced by each trial.
+As a result of this, a folder named "test_base_folder" will have been created that has two subfolders: Problems, iter_0, and iter_1. Problems contains the generated problem files (only 2 here, since the --iters value was set to 2), and the iter folders contain images showing what happened in each trial visually (examples located in the Images folder of this repo) in addition to a text file providing a brief summary of all trials, and a json file containing all data produced by each trial.
 
 To run the file in "Test" mode, the lists that are commented out below "folder_list" and "domain_list" can be uncommented, and the old lists can be removed. Then, the following can be run:
 
@@ -70,7 +70,7 @@ To run the file in "Test" mode, the lists that are commented out below "folder_l
 python3 Sim.py --mode Test --iters 2 --trials 2
 ```
 
-This will generate a few more folders containing iteration data as previously described. This general process can be followed using any combination of arguments, within reason.
+This will generate two more folders containing iteration data as previously described. This general process can be followed using any combination of arguments, within reason.
 
 ### Analysis
 

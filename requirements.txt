@@ -1,0 +1,8 @@
+jax==0.4.20
+jaxlib==0.4.20
+pyRDDLGym==1.3.0
+matplotlib==3.8.2
+osmnx==1.7.1
+dm-haiku==0.0.11
+tqdm==4.66.1
+tensorflow-probability==0.22.1

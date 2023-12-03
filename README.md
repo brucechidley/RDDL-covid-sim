@@ -59,7 +59,6 @@ Sim.py has some default folders and domains written as an example, and this can 
 
 ```
 python3 Sim.py --mode Init --iters 2 --trials 2
-
 ```
 
 As a result of this, a folder named "test_base_folder" will have been created that has two subfolders: Problems, iter_0, and iter_1. Problems contains the generated problem files (only 2 here, since the --iters value was set to 2), and the iter folders contain images showing what happened in each trial visually (examples located in the Images folder of this repo) in addition to a text file providing a brief summary of all trials, and a json file containing all data produced by each trial.

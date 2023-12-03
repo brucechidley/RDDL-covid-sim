@@ -55,7 +55,7 @@ This file must initially be run in the "Init" mode (which is the default value f
 
 From there Sim.py can be run in "Test" mode. This mode works by drawing upon previously generated problem files and seeds, and using those for the simulations. "folder_list" still represents the target folders, and should be edited as such. Likewise, "domain_list" works the same as before. This time "source_file_folder" must be changed to whatever the folder is that contains the problem files and seeds. This can only be one folder - hence, all folders in "folder_list" will be drawing from this one folder's problem files.
 
-The Sim.py has some default folders and domains as an example, and this can be run by executing the following:
+Sim.py has some default folders and domains written as an example, and this can be run by executing the following:
 
 ```
 python3 Sim.py --mode Init --iters 2 --trials 2
